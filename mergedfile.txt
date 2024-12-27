@@ -1,0 +1,36 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import regexp_replace
+
+spark = SparkSession.builder.appName("your_app_name").getOrCreate() 
+# List of file paths in S3
+file_paths = [
+"/user/hadoop/Amazon_US/amazon_reviews_us_Apparel_v1_00.tsv", 
+"/user/hadoop/Amazon_US/amazon_reviews_us_Electronics_v1_00.tsv", 
+"/user/hadoop/Amazon_US/amazon_reviews_us_Furniture_v1_00.tsv",
+ "/user/hadoop/Amazon_US/amazon_reviews_us_Grocery_v1_00.tsv",
+"/user/hadoop/Amazon_US/amazon_reviews_us_Mobile_Electronics_v1_00.tsv",
+"/user/hadoop/Amazon_US/amazon_reviews_us_Personal_Care_Appliances_v1_00.tsv", 
+"/user/hadoop/Amazon_US/amazon_reviews_us_Shoes_v1_00.tsv",
+"/user/hadoop/Amazon_US/amazon_reviews_us_Watches_v1_00.tsv"
+]
+
+# Placeholder string for tab characters tab_placeholder = "<TAB>"
+
+# Read the first file to initialize the DataFrame with headers df = spark.read.csv(file_paths[0], sep='\t', header=True)
+# Replace tab characters with placeholder in the first DataFrame
+df = df.select([regexp_replace(col, '\t', tab_placeholder).alias(col) for col in df.columns])
+
+# Read and append the remaining files, ignoring the header for file_path in file_paths[1:]:
+temp_df = spark.read.csv(file_path, sep='\t', header=True)
+temp_df = temp_df.select([regexp_replace(col, '\t', tab_placeholder).alias(col) for col in temp_df.columns])
+df = df.unionByName(temp_df)
+# Optionally, revert placeholder back to tabs after processing if needed
+df = df.select([regexp_replace(col, tab_placeholder, '\t').alias(col) for col in df.columns])
+
+# Write the merged DataFrame to S3 as a single TSV file
+df.coalesce(1).write.csv("s3://finalproject01/output/merged_output", sep='\t', header=True)
+df1 = spark.read.csv("s3://finalproject01/output/merged_output3/part-00000-385735e9-aef7- 42d5-909c-e1bec98deb5d-c000.csv", sep='\t',header=True)
+df1.show()
+
+# Stop the Spark session 
+spark.stop()
