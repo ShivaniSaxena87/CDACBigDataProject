@@ -1,0 +1,24 @@
+Product.csv
+from pyspark.sql import SparkSession
+
+# Initialize Spark session
+spark = SparkSession.builder \
+.appName("ReadTabSeparatedCSV") \
+.getOrCreate()
+# Read the CSV file with tab separation
+df1 = spark.read.csv("/user/hadoop/new_merge_2.csv", sep='\t', header=True)
+
+# Select only the specified columns
+df_selected2 = df1.select("product_id", "product_parent", "product_title", "product_category")
+
+
+
+# Drop duplicates based on the 'customer_id' column
+df_distinct1 = df_selected2.dropDuplicates(["product_id"])
+
+# Show the resulting DataFrame
+df_distinct1.show()
+
+# Write the distinct DataFrame to a new CSV file with tab separation 
+output_path = "/user/hadoop/new_prod_distinct.csv"
+df_distinct1.coalesce(1).write.csv(output_path, sep='\t', header=True, mode='overwrite')
